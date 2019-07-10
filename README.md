@@ -1,5 +1,7 @@
 ===============================
+
 Integration of ODE in a network
+
 ===============================
 
 We have a network composed of chains of elements.
