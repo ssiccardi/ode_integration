@@ -29,9 +29,9 @@ def model1(xy,t):
         raise Exception('V2 causes division by zero (=1/2b) at t = %s' % t)
     if 1 -2*b*xy[2] == 0:
         raise Exception('V3 causes division by zero (=1/2b) at t = %s' % t)
-    dv1dt= (1/((k**2)*L*C0*(1 -2*b*xy[0])))*(L*C0 * 2*b*(k*xy[3])**2 + xy[1] - 2*xy[0] - R1*C0 *k*(xy[3] - 2*b*xy[0]*xy[3]) - R2*C0*k*(2*(xy[3] - 2*b*xy[0]*xy[3])-(xy[4] - 2*b*xy[1]*xy[4])))
-    dv2dt= (1/((k**2)*L*C0*(1 -2*b*xy[1])))*(L*C0 * 2*b*(k*xy[4])**2 + xy[0] + xy[3] - 2*xy[1] - R1*C0 *k*(xy[4] - 2*b*xy[1]*xy[4]) - R2*C0*k*(2*(xy[4] - 2*b*xy[1]*xy[4])-(xy[5] - 2*b*xy[2]*xy[5])-(xy[3] - 2*b*xy[0]*xy[3])))
-    dv3dt= (1/((k**2)*L*C0*(1 -2*b*xy[2])))*(L*C0 * 2*b*(k*xy[5])**2 + xy[1] - 2*xy[2] - R1*C0 *k*(xy[5] - 2*b*xy[2]*xy[5]) - R2*C0*k*(2*(xy[5] - 2*b*xy[2]*xy[5])-(xy[4] - 2*b*xy[1]*xy[4])))
+    dv1dt= (1/((k**2)*L*C0*(1 -2*b*xy[0])))*(L*C0 * 2*b*(k*xy[3])**2 + xy[1] - 2*xy[0]         - R1*C0 *k*(xy[3] - 2*b*xy[0]*xy[3]) - R2*C0*k*(2*(xy[3] - 2*b*xy[0]*xy[3])-(xy[4] - 2*b*xy[1]*xy[4])))
+    dv2dt= (1/((k**2)*L*C0*(1 -2*b*xy[1])))*(L*C0 * 2*b*(k*xy[4])**2 + xy[0] + xy[2] - 2*xy[1] - R1*C0 *k*(xy[4] - 2*b*xy[1]*xy[4]) - R2*C0*k*(2*(xy[4] - 2*b*xy[1]*xy[4])-(xy[5] - 2*b*xy[2]*xy[5])-(xy[3] - 2*b*xy[0]*xy[3])))
+    dv3dt= (1/((k**2)*L*C0*(1 -2*b*xy[2])))*(L*C0 * 2*b*(k*xy[5])**2 + xy[1] - 2*xy[2]         - R1*C0 *k*(xy[5] - 2*b*xy[2]*xy[5]) - R2*C0*k*(2*(xy[5] - 2*b*xy[2]*xy[5])-(xy[4] - 2*b*xy[1]*xy[4])))
     return [xy[3],xy[4],xy[5], dv1dt, dv2dt, dv3dt]
     
 
@@ -84,7 +84,7 @@ def model2(t,xy):
     if 1 -2*b*xy[2] == 0:
         raise Exception('V3 causes division by zero (=1/2b) at t = %s' % t)
     dv1dt= (1/((k**2)*L*C0*(1 -2*b*xy[0])))*(L*C0 * 2*b*(k*xy[3])**2 + xy[1] - 2*xy[0] - R1*C0 *k*(xy[3] - 2*b*xy[0]*xy[3]) - R2*C0*k*(2*(xy[3] - 2*b*xy[0]*xy[3])-(xy[4] - 2*b*xy[1]*xy[4])))
-    dv2dt= (1/((k**2)*L*C0*(1 -2*b*xy[1])))*(L*C0 * 2*b*(k*xy[4])**2 + xy[0] + xy[3] - 2*xy[1] - R1*C0 *k*(xy[4] - 2*b*xy[1]*xy[4]) - R2*C0*k*(2*(xy[4] - 2*b*xy[1]*xy[4])-(xy[5] - 2*b*xy[2]*xy[5])-(xy[3] - 2*b*xy[0]*xy[3])))
+    dv2dt= (1/((k**2)*L*C0*(1 -2*b*xy[1])))*(L*C0 * 2*b*(k*xy[4])**2 + xy[0] + xy[2] - 2*xy[1] - R1*C0 *k*(xy[4] - 2*b*xy[1]*xy[4]) - R2*C0*k*(2*(xy[4] - 2*b*xy[1]*xy[4])-(xy[5] - 2*b*xy[2]*xy[5])-(xy[3] - 2*b*xy[0]*xy[3])))
     dv3dt= (1/((k**2)*L*C0*(1 -2*b*xy[2])))*(L*C0 * 2*b*(k*xy[5])**2 + xy[1] - 2*xy[2] - R1*C0 *k*(xy[5] - 2*b*xy[2]*xy[5]) - R2*C0*k*(2*(xy[5] - 2*b*xy[2]*xy[5])-(xy[4] - 2*b*xy[1]*xy[4])))
     return [xy[3],xy[4],xy[5], dv1dt, dv2dt, dv3dt]
 
