@@ -7,21 +7,23 @@ import matplotlib.pyplot as plt
 import random as rng
 
 # basic parameters
-b = 0.1
+b = 0.02
 L = 1.7*10**-12
 C0 = 96*10**-18  
 R1 = 6.11*10**6
 R2 = 0.9*10**6
 k=10**9
-neqs = 80  # does not succeed with 400 eqs 
-fine = 1000
-durata = 10
+neqs = 64  # does not succeed with 400 eqs 
+fine = 5000
+durata = 1000
+#electrodes = [0,1,2] # to test with an external potential at the first electrodes
 electrodes = [0]
+newinit = 0  # to restart integration
 
 print(1/((k**2)*C0*L))
 print(k*(R1*C0+2*R2*C0))
 print(k*L*C0)
-
+print(1/(k*np.sqrt(L*C0)))
 
 # function that returns dv/dt etc.
 # we have 3 second order equations, so 6 first order
@@ -43,10 +45,19 @@ def model1(t,xy):
 def ufunc(t,i):
     if i not in electrodes:
         return 0
-    if t<durata:
-        return np.cos(np.pi*t)
+    tt = t+newinit
+    if tt<durata:
+#        return np.cos(np.pi*t)
+        if i==1:
+            xx=1.0
+        else:
+            xx=0.5
+        #return 0.00006*xx*np.sin((t+newinit)/1000)  # to compare to the Mathematica old progr
+#        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)  # RLC resonance?
+        return np.cos(2*np.pi*tt/durata)  # to compare to the Mathematica old progr
     elif t<durata*2:
-        return np.cos(np.pi*t)*np.exp(-0.5*(t-durata)**2)
+#        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)*np.exp(-0.5*(t-durata)**2) # RLC resonance?
+        return np.cos(2*np.pi*tt/durata)*np.exp(-0.5*(tt-durata)**2)
     else:
         return 0
 
@@ -54,18 +65,67 @@ def ufunc(t,i):
 
 #n=fine*50+1
 t1=[0]
-x=[[0],[0],[0]]
+x=[[0],[0],[0]]  
+#x=[[1],[1],[1]]  # to compare to the old mathematica program with in. cond 1
 for i in range(3,neqs):
     x.append([0])
-
+#for i in range(20,40):
+#    x[i][0]=1
 #print(x)
-
+# to compare old programs with the "initial bump"
+#x[0][0] = 0.05*0.01
+#x[1][0] = 0.05*0.025
+#x[2][0] = 0.05*0.075
+#x[3][0] = 0.05*0.15
+#x[4][0] = 0.05*0.275
+#x[5][0] = 0.05*0.4
+#x[6][0] = 0.05*0.4
+#x[7][0] = 0.05*0.275
+#x[8][0] = 0.05*0.15
+#x[9][0] = 0.05*0.075
+#x[10][0] = 0.05*0.025
+#x[10][0] = 0.05*0.01
 xy=np.zeros(neqs*2)
+# set all = 0 to test comparison to old progr with sin(x) added
 #xy[0] = 1
 #xy[1] = 1
 #xy[2] = 1
+#xy[0+neqs] = -1
+#xy[1+neqs] = -1
+#xy[2+neqs] = -1
+# to compare old programs with the "initial bump"
+#xy[0] = 0.5*0.01
+#xy[1] = 0.5*0.025
+#xy[2] = 0.5*0.075
+#xy[3] = 0.5*0.15
+#xy[4] = 0.5*0.275
+#xy[5] = 0.5*0.4
+#xy[6] = 0.5*0.4
+#xy[7] = 0.5*0.275
+#xy[8] = 0.5*0.15
+#xy[9] = 0.5*0.075
+#xy[10] = 0.5*0.025
+#xy[11] = 0.5*0.01
+#xy[0+neqs] = -0.5*0.01
+#xy[1+neqs] = -0.5*0.015
+#xy[2+neqs] = -0.5*0.05
+#xy[3+neqs] = -0.5*0.075
+#xy[4+neqs] = -0.5*0.125
+#xy[5+neqs] = -0.5*0.125
+#xy[6+neqs] = 0
+#xy[7+neqs] = 0.5*0.125
+#xy[8+neqs] = 0.5*0.125
+#xy[9+neqs] = 0.5*0.075
+#xy[10+neqs] = 0.5*0.05
+#xy[11+neqs] = 0.5*0.015
+#xy[12+neqs] = 0.5*0.01
+
+#for i in range(20,40):
+#    xy[i]=1
+#xy[2] = 1
 
 r = ode(model1).set_integrator('lsoda', method='bdf',nsteps=5000)
+#r = ode(model1).set_integrator('vode', method='bdf',nsteps=5000)
 r.set_initial_value(xy, 0)
 dt=0.1
 stepi=0
@@ -80,7 +140,38 @@ while r.successful() and r.t < fine:
 #        print(sol[i])
         x[i].append(sol[i])
 
-for i in range(10):
+# if it does not succeed, I try restarting with initial conditions = the last values
+#   computed
+
+iterations = 0
+
+print("Time now %s" % r.t)
+
+while iterations<5:
+    newinit = newinit+r.t
+    if newinit>= fine:
+        break
+    iterations = iterations + 1
+    print("Time corresponding to new zero %s" % newinit)
+    for i in range(neqs):
+        xy[i]= x[i][len(x[i])-1]
+        xy[i+neqs]= (x[i][len(x[i])-1]-x[i][len(x[i])-2])/dt
+    r.set_initial_value(xy,0)
+    remain = fine-newinit
+    print("Time remaining to integrate %s" % remain)
+    while r.successful() and r.t < remain:
+        t1.append(newinit+r.t+dt)
+        sol=r.integrate(r.t+dt)
+        stepi=stepi+1
+        if stepi % 20 == 0:
+            print("step %s" % stepi)
+        for i in range(neqs):
+#        print(x[i])
+#        print(sol[i])
+            x[i].append(sol[i])
+
+
+for i in range(min(neqs,10)):
     color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
     plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
 
@@ -93,36 +184,38 @@ for i in range(10):
 
 plt.legend()
 plt.show()
-
-for i in range(10,20):
-    color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
-    plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
-
-
-plt.legend()
-plt.show()
-
-for i in range(20,30):
-    color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
-    plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
+if neqs>=20:
+    for i in range(10,20):
+        color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+        plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
 
 
 plt.legend()
 plt.show()
-
-for i in range(30,40):
-    color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
-    plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
-
-
-plt.legend()
-plt.show()
-
-for i in range(neqs-10,neqs):
-    color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
-    plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
+if neqs>=30:
+    for i in range(20,30):
+        color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+        plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
 
 
-plt.legend()
-plt.show()
+    plt.legend()
+    plt.show()
+
+if neqs>=40:
+    for i in range(30,40):
+        color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+        plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
+
+
+    plt.legend()
+    plt.show()
+
+if neqs>=10:
+    for i in range(neqs-10,neqs):
+        color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+        plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
+
+
+    plt.legend()
+    plt.show()
 
