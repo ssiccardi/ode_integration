@@ -8,17 +8,31 @@ import random as rng
 
 # basic parameters
 b = 0.02
+k=10**9
+neqs = 740  # does not succeed with 400 eqs 
+fine = 20000
+durata = 20000
+#electrodes = [0,1,2] # to test with an external potential at the first electrodes
+electrodes = [0]
+newinit = 0  # to restart integration
+
+# single filament
 L = 1.7*10**-12
 C0 = 96*10**-18  
 R1 = 6.11*10**6
 R2 = 0.9*10**6
-k=10**9
-neqs = 64  # does not succeed with 400 eqs 
-fine = 5000
-durata = 1000
-#electrodes = [0,1,2] # to test with an external potential at the first electrodes
-electrodes = [0]
-newinit = 0  # to restart integration
+# high density bundle 450nm width 
+#L = 8378*10**-12
+#C0 = 76*10**-16  
+#R1 = 0.077*10**6
+#R2 = R1/7
+# low density bundle 50 filaments
+#L = 3.83*10**-14
+#C0 = 2*10**-18  
+#R1 = 0.11*10**6
+#R2 = 50*R1/7  # series-addition formula for resistance
+
+
 
 print(1/((k**2)*C0*L))
 print(k*(R1*C0+2*R2*C0))
@@ -46,6 +60,7 @@ def ufunc(t,i):
     if i not in electrodes:
         return 0
     tt = t+newinit
+    tt0 = durata/10
     if tt<durata:
 #        return np.cos(np.pi*t)
         if i==1:
@@ -54,10 +69,25 @@ def ufunc(t,i):
             xx=0.5
         #return 0.00006*xx*np.sin((t+newinit)/1000)  # to compare to the Mathematica old progr
 #        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)  # RLC resonance?
-        return np.cos(2*np.pi*tt/durata)  # to compare to the Mathematica old progr
+        #if i==0:
+        #    return np.cos(2*np.pi*tt/(durata/2))
+        #else:
+        #    return -np.cos(2*np.pi*tt/(durata/2))
+        tmp=(tt-tt0)/tt0
+#        return (1/2 - ((np.exp(tmp)-np.exp(-tmp))/(2*(np.exp(tmp)+np.exp(-tmp)))))
+#        if i==0:
+#            return (((np.exp(tmp)-np.exp(-tmp))/((np.exp(tmp)+np.exp(-tmp)))))
+#        else:
+#            return -(((np.exp(tmp)-np.exp(-tmp))/((np.exp(tmp)+np.exp(-tmp)))))
+        if i==0:  
+            return 1
+        else:
+            return -1
     elif t<durata*2:
 #        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)*np.exp(-0.5*(t-durata)**2) # RLC resonance?
-        return np.cos(2*np.pi*tt/durata)*np.exp(-0.5*(tt-durata)**2)
+#        return np.cos(2*np.pi*tt/(durata/2))*np.exp(-0.5*(tt-durata)**2)
+        return np.exp(-0.5*(tt-durata)**2)
+#        return 0
     else:
         return 0
 
@@ -129,6 +159,12 @@ r = ode(model1).set_integrator('lsoda', method='bdf',nsteps=5000)
 r.set_initial_value(xy, 0)
 dt=0.1
 stepi=0
+time80 = -1   # when the last element reaches 80% of the input (supposing input == 1)
+time05 = -1   # when the first element goes back to zero
+maxval = -99999
+minval = 99999
+timemax = -1   # time of max value
+timemin = -1   # time of min value
 while r.successful() and r.t < fine:
     t1.append(r.t+dt)
     sol=r.integrate(r.t+dt)
@@ -139,6 +175,16 @@ while r.successful() and r.t < fine:
 #        print(x[i])
 #        print(sol[i])
         x[i].append(sol[i])
+    if sol[neqs-1] >= 0.0025 and time80 == -1:
+        time80 = r.t
+    if sol[0] <= 0.05 and time05 == -1:
+        time05 = r.t
+    if np.absolute(sol[neqs-1]) >= maxval:
+        timemax = r.t
+        maxval = np.absolute(sol[neqs-1])
+    if np.absolute(sol[0]) <= minval:
+        timemin = r.t
+        minval = np.absolute(sol[0])
 
 # if it does not succeed, I try restarting with initial conditions = the last values
 #   computed
@@ -169,6 +215,30 @@ while iterations<5:
 #        print(x[i])
 #        print(sol[i])
             x[i].append(sol[i])
+        if sol[neqs-1] >= 0.8 and time80 == -1:
+            time80 = r.t
+        if sol[0] <= 0.05 and time05 == -1:
+            time05 = r.t
+        if np.absolute(sol[neqs-1]) >= maxval:
+            timemax = r.t
+            maxval = np.absolute(sol[neqs-1])
+        if np.absolute(sol[0]) <= minval:
+            timemin = r.t
+            minval = np.absolute(sol[0])
+
+newinit = 0
+for i in electrodes:
+    color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+    uu = np.zeros((len(t1)))
+    k=0
+    for tx in t1:
+        uu[k] = ufunc(tx,i)
+        k=k+1
+    plt.plot(t1,uu,color,linewidth=2,label='v'+str(i))
+
+if electrodes:
+    plt.legend()
+    plt.show()
 
 
 for i in range(min(neqs,10)):
@@ -210,6 +280,24 @@ if neqs>=40:
     plt.legend()
     plt.show()
 
+if neqs>=64:
+    for i in range(54,63):
+        color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+        plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
+
+
+    plt.legend()
+    plt.show()
+
+if neqs>=370:
+    for i in range(360,370):
+        color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+        plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
+
+
+    plt.legend()
+    plt.show()
+
 if neqs>=10:
     for i in range(neqs-10,neqs):
         color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
@@ -218,4 +306,9 @@ if neqs>=10:
 
     plt.legend()
     plt.show()
+
+print("Last element reached max %s at %s" % (maxval,timemax))
+print("First element dropped at min %s at %s" % (minval,timemin))
+print("Last element reached 0.015 of input at %s" % time80)
+print("First element dropped at 0.05 of input at %s" % time05)
 
