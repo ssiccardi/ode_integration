@@ -9,12 +9,13 @@ import random as rng
 # basic parameters
 b = 0.02
 k=10**9
-neqs = 740  # does not succeed with 400 eqs 
-fine = 20000
-durata = 20000
+neqs = 64  # does not succeed with 400 eqs 
+fine = 5000
+durata = 5000
 #electrodes = [0,1,2] # to test with an external potential at the first electrodes
 electrodes = [0]
 newinit = 0  # to restart integration
+cycling = 1  # if =1 the bundle is cloed on itslef
 
 # single filament
 L = 1.7*10**-12
@@ -47,11 +48,11 @@ def model1(t,xy):
         if 1 -2*b*xy[i] == 0:
             raise Exception('V%s causes division by zero (=1/2b) at t = %s' % (i,t))
     res = np.zeros(2*neqs)
-    res[neqs]= (1/((k**2)*L*C0*(1 -2*b*xy[0])))*(L*C0 * 2*b*(k*xy[neqs])**2 + ufunc(t,0) + xy[1] - 2*xy[0] - R1*C0 *k*(xy[neqs] - 2*b*xy[0]*xy[neqs]) - R2*C0*k*(2*(xy[neqs] - 2*b*xy[0]*xy[neqs])-(xy[neqs+1] - 2*b*xy[1]*xy[neqs+1])))
+    res[neqs]= (1/((k**2)*L*C0*(1 -2*b*xy[0])))*(L*C0 * 2*b*(k*xy[neqs])**2 + ufunc(t,0) + cycling*xy[neqs-1] + xy[1] - 2*xy[0] - R1*C0 *k*(xy[neqs] - 2*b*xy[0]*xy[neqs]) - R2*C0*k*(2*(xy[neqs] - 2*b*xy[0]*xy[neqs])-(xy[neqs+1] - 2*b*xy[1]*xy[neqs+1])-cycling*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1])))
     for i in range(1,neqs-1):
         res[neqs+i]= (1/((k**2)*L*C0*(1 -2*b*xy[i])))*(L*C0 * 2*b*(k*xy[neqs+i])**2 + ufunc(t,i) + xy[i-1] + xy[i+1] - 2*xy[i] - R1*C0 *k*(xy[neqs+i] - 2*b*xy[i]*xy[neqs+i]) - R2*C0*k*(2*(xy[neqs+i] - 2*b*xy[i]*xy[neqs+i])-(xy[neqs+i+1] - 2*b*xy[i+1]*xy[neqs+i+1])-(xy[neqs+i-1] - 2*b*xy[i-1]*xy[neqs+i-1])))
     
-    res[2*neqs-1]= (1/((k**2)*L*C0*(1 -2*b*xy[neqs-1])))*(L*C0 * 2*b*(k*xy[2*neqs-1])**2 + ufunc(t,neqs-1) + xy[neqs-2] - 2*xy[neqs-1] - R1*C0 *k*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1]) - R2*C0*k*(2*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1])-(xy[2*neqs-2] - 2*b*xy[neqs-2]*xy[2*neqs-2])))
+    res[2*neqs-1]= (1/((k**2)*L*C0*(1 -2*b*xy[neqs-1])))*(L*C0 * 2*b*(k*xy[2*neqs-1])**2 + ufunc(t,neqs-1) +cycling*xy[0] + xy[neqs-2] - 2*xy[neqs-1] - R1*C0 *k*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1]) - R2*C0*k*(2*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1])-(xy[2*neqs-2] - 2*b*xy[neqs-2]*xy[2*neqs-2])-cycling*(xy[neqs] - 2*b*xy[0]*xy[neqs])))
     for i in range(neqs):
         res[i] = xy[i+neqs]
     return res
@@ -69,20 +70,20 @@ def ufunc(t,i):
             xx=0.5
         #return 0.00006*xx*np.sin((t+newinit)/1000)  # to compare to the Mathematica old progr
 #        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)  # RLC resonance?
-        #if i==0:
-        #    return np.cos(2*np.pi*tt/(durata/2))
-        #else:
-        #    return -np.cos(2*np.pi*tt/(durata/2))
+        if i==0:
+            return np.cos(2*np.pi*tt/(durata/2))
+        else:
+            return -np.cos(2*np.pi*tt/(durata/2))
         tmp=(tt-tt0)/tt0
 #        return (1/2 - ((np.exp(tmp)-np.exp(-tmp))/(2*(np.exp(tmp)+np.exp(-tmp)))))
 #        if i==0:
 #            return (((np.exp(tmp)-np.exp(-tmp))/((np.exp(tmp)+np.exp(-tmp)))))
 #        else:
 #            return -(((np.exp(tmp)-np.exp(-tmp))/((np.exp(tmp)+np.exp(-tmp)))))
-        if i==0:  
-            return 1
-        else:
-            return -1
+#        if i==0:  
+#            return 1
+#        else:
+#            return -1
     elif t<durata*2:
 #        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)*np.exp(-0.5*(t-durata)**2) # RLC resonance?
 #        return np.cos(2*np.pi*tt/(durata/2))*np.exp(-0.5*(tt-durata)**2)
