@@ -17,8 +17,8 @@ b = 0.02
 k=10**9
 neqs = 64  # windows of equations considered
 toteqs = 256 # total number of equations
-fine = 5000
-durata = 5000  # must be = fine, only constant input
+fine = 500
+durata = 500  # must be = fine, only constant input
 #electrodes = [0,1,2] # to test with an external potential at the first electrodes
 electrodes = [0]
 newinit = 0  # to restart integration
@@ -124,9 +124,10 @@ timemax = -1   # time of max value
 timemin = -1   # time of min value
 stopcount = 0
 iterations = 0
+remain = fine
 
-while r.successful() and r.t < fine:
-    t1.append(r.t+dt)
+while r.successful() and r.t < remain:
+    t1.append(newinit+r.t+dt)
     sol=r.integrate(r.t+dt)
     stepi=stepi+1
     if stepi % 20 == 0:
@@ -134,33 +135,45 @@ while r.successful() and r.t < fine:
     for i in range(starteq):
         x[i].append(x[i][len(x[i])-1])
         
-    for i in range(starteq,neqs):
-        x[i].append(sol[i])
-    for i in range(neqs,toteqs):
+    for i in range(neqs):
+        x[i+starteq].append(sol[i])
+    for i in range(starteq+neqs,toteqs):
         x[i].append(0)
     # check if first cell is constant
-    if np.absolute(sol[0] - 1) < 0.05:
+    if np.absolute(sol[0] - 1) < 0.02:
         stopcount = stopcount + 1
     else:
         stopcount = 0
     if stopcount > 3:
-        if starteq<toteqs-1:
+        if starteq<toteqs-neqs:
             starteq = starteq + 1
+            # shift the data
+            for i in range(neqs-1):
+                xy[i]= x[i+1][len(x[i+1])-1]
+                xy[i+neqs]= (x[i+1][len(x[i+1])-1]-x[i+1][len(x[i+1])-2])/dt
+            xy[neqs-1] = 0
+            xy[2*neqs-1] = 0    
+            newinit = newinit+r.t
+            if newinit>= fine:
+                iterations = 10 # DON'T go on computing!
+                break
+            remain = fine-newinit
+            r.set_initial_value(xy,0)
         else:
             iterations = 10 # DON'T go on computing!
             break
         stopcount = 0
     # the following evaluations should be modified!
-    if sol[neqs-1] >= 0.0025 and time80 == -1:
-        time80 = r.t
-    if sol[0] <= 0.05 and time05 == -1:
-        time05 = r.t
-    if np.absolute(sol[neqs-1]) >= maxval:
-        timemax = r.t
-        maxval = np.absolute(sol[neqs-1])
-    if np.absolute(sol[0]) <= minval:
-        timemin = r.t
-        minval = np.absolute(sol[0])
+#    if sol[neqs-1] >= 0.0025 and time80 == -1:
+#        time80 = r.t
+#    if sol[0] <= 0.05 and time05 == -1:
+#        time05 = r.t
+#    if np.absolute(sol[neqs-1]) >= maxval:
+#        timemax = r.t
+#        maxval = np.absolute(sol[neqs-1])
+#    if np.absolute(sol[0]) <= minval:
+#        timemin = r.t
+#        minval = np.absolute(sol[0])
 
 # if it does not succeed, I try restarting with initial conditions = the last values
 #   computed
@@ -200,7 +213,7 @@ while iterations<5:
         else:
             stopcount = 0
         if stopcount > 3:
-            if starteq < toteqs-1:
+            if starteq < toteqsneqs-neqs-1:
                 starteq = starteq + 1
             else:
                 iterations = 10
@@ -294,12 +307,12 @@ if toteqs>=10:
     plt.show()
 
 if toteqs>=16:
-    for i in range(0,toteqs,16):
+    for i in range(0,toteqs-neqs,16):
         color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
         plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
 
     color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
-    plt.plot(t1,x[toteqs-1],color,linewidth=2,label='v'+str(toteqs-1))
+    plt.plot(t1,x[toteqs-neqs],color,linewidth=2,label='v'+str(toteqs-neqs))
 
     plt.legend()
     plt.show()
