@@ -9,29 +9,29 @@ import random as rng
 # basic parameters
 b = 0.02
 k=10**9
-neqs = 64  # does not succeed with 400 eqs 
+neqs = 256  # does not succeed with 400 eqs 
 fine = 5000
 durata = 5000
 #electrodes = [0,1,2] # to test with an external potential at the first electrodes
-electrodes = [0]
+electrodes = [0,255]
 newinit = 0  # to restart integration
 cycling = 0  # if =1 the bundle is cloed on itslef
 
 # single filament
-L = 1.7*10**-12
-C0 = 96*10**-18  
-R1 = 6.11*10**6
-R2 = 0.9*10**6
+#L = 1.7*10**-12
+#C0 = 96*10**-18  
+#R1 = 6.11*10**6
+#R2 = 0.9*10**6
 # high density bundle 450nm width 
 #L = 8378*10**-12
 #C0 = 76*10**-16  
 #R1 = 0.077*10**6
 #R2 = R1/7
 # low density bundle 50 filaments
-#L = 3.83*10**-14
-#C0 = 2*10**-18  
-#R1 = 0.11*10**6
-#R2 = 50*R1/7  # series-addition formula for resistance
+L = 3.83*10**-14
+C0 = 2*10**-18  
+R1 = 0.11*10**6
+R2 = 50*R1/7  # series-addition formula for resistance
 
 
 
@@ -84,11 +84,12 @@ def ufunc(t,i):
             return 1
         else:
             return -1
-    elif t<durata*2:
+    elif tt<durata*2:
 #        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)*np.exp(-0.5*(t-durata)**2) # RLC resonance?
 #        return np.cos(2*np.pi*tt/(durata/2))*np.exp(-0.5*(tt-durata)**2)
-        return np.exp(-0.5*(tt-durata)**2)
-#        return 0
+#        return np.exp(-0.01*(tt-durata))
+#        return np.exp(-0.5*(tt-durata)**2)
+        return 1-tt/(durata*2)
     else:
         return 0
 
@@ -186,6 +187,9 @@ while r.successful() and r.t < fine:
     if np.absolute(sol[0]) <= minval:
         timemin = r.t
         minval = np.absolute(sol[0])
+    if stepi>fine-25:  # forcing restart is a good idea in some cases
+        print("exit at %s" % r.t)
+        break
 
 # if it does not succeed, I try restarting with initial conditions = the last values
 #   computed
@@ -193,6 +197,7 @@ while r.successful() and r.t < fine:
 iterations = 0
 
 print("Time now %s" % r.t)
+
 
 while iterations<5:
     newinit = newinit+r.t
@@ -226,6 +231,10 @@ while iterations<5:
         if np.absolute(sol[0]) <= minval:
             timemin = r.t
             minval = np.absolute(sol[0])
+        if r.t>remain-25:  # sometimes the last steps are tricky...
+            print("forced exit")
+            iterations = 10
+            break
 
 newinit = 0
 for i in electrodes:
@@ -304,6 +313,17 @@ if neqs>=10:
         color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
         plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
 
+
+    plt.legend()
+    plt.show()
+
+if neqs>=16:
+    for i in range(0,neqs,16):
+        color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+        plt.plot(t1,x[i],color,linewidth=2,label='v'+str(i))
+
+    color = '#'+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))+'{:02x}'.format(rng.randint(0,255))
+    plt.plot(t1,x[neqs-1],color,linewidth=2,label='v'+str(neqs-1))
 
     plt.legend()
     plt.show()
