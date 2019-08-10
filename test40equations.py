@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 import random as rng
 
 # basic parameters
-b = 0.02
-k=10**9
-neqs = 256  # does not succeed with 400 eqs 
+b = 0.02 # tested also b=0.2 
+k=10**9   # k=10**10 # for low density
+neqs = 64  # does not succeed with 400 eqs 
 fine = 5000
-durata = 5000
+durata = 5100
 #electrodes = [0,1,2] # to test with an external potential at the first electrodes
-electrodes = [0,255]
+electrodes = [0]
 newinit = 0  # to restart integration
 cycling = 0  # if =1 the bundle is cloed on itslef
 
@@ -23,15 +23,15 @@ cycling = 0  # if =1 the bundle is cloed on itslef
 #R1 = 6.11*10**6
 #R2 = 0.9*10**6
 # high density bundle 450nm width 
-#L = 8378*10**-12
-#C0 = 76*10**-16  
-#R1 = 0.077*10**6
-#R2 = R1/7
+L = 8378*10**-12
+C0 = 76*10**-16  
+R1 = 0.077*10**6
+R2 = R1/7
 # low density bundle 50 filaments
-L = 3.83*10**-14
-C0 = 2*10**-18  
-R1 = 0.11*10**6
-R2 = 50*R1/7  # series-addition formula for resistance
+#L = 3.83*10**-14
+#C0 = 2*10**-18  
+#R1 = 0.11*10**6
+#R2 = 50*R1/7  # series-addition formula for resistance
 
 
 
@@ -62,7 +62,7 @@ def ufunc(t,i):
         return 0
     tt = t+newinit
     tt0 = durata/10
-    if tt<durata:
+    if tt<=durata:
 #        return np.cos(np.pi*t)
         if i==1:
             xx=1.0
@@ -81,15 +81,16 @@ def ufunc(t,i):
 #        else:
 #            return -(((np.exp(tmp)-np.exp(-tmp))/((np.exp(tmp)+np.exp(-tmp)))))
         if i==0:  
-            return 1
+            return 0.001
         else:
             return -1
     elif tt<durata*2:
 #        return np.cos((1/(k*np.sqrt(L*C0)*0.7))*tt)*np.exp(-0.5*(t-durata)**2) # RLC resonance?
 #        return np.cos(2*np.pi*tt/(durata/2))*np.exp(-0.5*(tt-durata)**2)
 #        return np.exp(-0.01*(tt-durata))
-#        return np.exp(-0.5*(tt-durata)**2)
-        return 1-tt/(durata*2)
+        return np.exp(-0.5*(tt-durata)**2)
+#        return 0.0
+#        return 1-tt/(durata*2)
     else:
         return 0
 
@@ -159,7 +160,7 @@ xy=np.zeros(neqs*2)
 r = ode(model1).set_integrator('lsoda', method='bdf',nsteps=5000)
 #r = ode(model1).set_integrator('vode', method='bdf',nsteps=5000)
 r.set_initial_value(xy, 0)
-dt=0.1
+dt=0.1 #  dt=0.001  # for low density bundles, as numerical integration is mode difficult
 stepi=0
 time80 = -1   # when the last element reaches 80% of the input (supposing input == 1)
 time05 = -1   # when the first element goes back to zero
@@ -168,6 +169,9 @@ minval = 99999
 timemax = -1   # time of max value
 timemin = -1   # time of min value
 while r.successful() and r.t < fine:
+#    if r.t+dt>=durata:  # forced restard for low density bundles when the input goes to zero
+#        print("exit at %s" % r.t)
+#        break
     t1.append(r.t+dt)
     sol=r.integrate(r.t+dt)
     stepi=stepi+1
@@ -231,10 +235,10 @@ while iterations<5:
         if np.absolute(sol[0]) <= minval:
             timemin = r.t
             minval = np.absolute(sol[0])
-        if r.t>remain-25:  # sometimes the last steps are tricky...
-            print("forced exit")
-            iterations = 10
-            break
+#        if r.t>remain-25:  # sometimes the last steps are tricky...
+#            print("forced exit")
+#            iterations = 10
+#            break
 
 newinit = 0
 for i in electrodes:
