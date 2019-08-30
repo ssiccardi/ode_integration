@@ -1,4 +1,5 @@
 # First Example of usage of the odeint scipy function
+# A node of 3 bundles, each has (neqs-1)/3 elements
 
 import numpy as np
 from scipy.integrate import odeint
@@ -8,16 +9,18 @@ import random as rng
 
 # basic parameters
 b = 0.02 # tested also b=0.2 
-ek = 10
+ek = 9
 k=10**ek   # k=10**10 # for low density
-neqs = 32  # does not succeed with 400 eqs 
+# (neqs-1)/3   must be integer!
+neqs = 64  # does not succeed with 400 eqs 
+###################
 fine = 1000
 durata = 10000
 #electrodes = [0,1,2] # to test with an external potential at the first electrodes
-electrodes = [0,31]
-v_electrodes = [1,-1,-1,1,-1,-1]
+electrodes = [0,4,14,49,59,63]
+v_electrodes = [1,1,-1,1,-1,-1]
 newinit = 0  # to restart integration
-cycling = 0  # if =1 the bundle is cloed on itslef
+cycling = 1  # if =1 the bundle is cloed on itslef
 
 # single filament
 #L = 1.7*10**-12
@@ -26,17 +29,17 @@ cycling = 0  # if =1 the bundle is cloed on itslef
 #R2 = 0.9*10**6
 #tit="Filament, total %s elements"
 # high density bundle 450nm width (integration converges easily)
-#L = 8378*10**-12
-#C0 = 76*10**-16  
-#R1 = 0.077*10**6
-#R2 = R1/7
-#tit="H.D. bundle 450nm thick, total %s elements"
+L = 8378*10**-12
+C0 = 76*10**-16  
+R1 = 0.077*10**6
+R2 = R1/7
+tit="H.D. bundle 450nm thick, total %s elements"
 # low density bundle 50 filaments
-L = 3.83*10**-14
-C0 = 2*10**-18  
-R1 = 0.11*10**6
-R2 = 50*R1/7  # series-addition formula for resistance
-tit="L.D. bundle of 50 filaments, total %s elements"
+#L = 3.83*10**-14
+#C0 = 2*10**-18  
+#R1 = 0.11*10**6
+#R2 = 50*R1/7  # series-addition formula for resistance
+#tit="L.D. bundle of 50 filaments, total %s elements"
 
 
 
@@ -53,9 +56,15 @@ def model1(t,xy):
         if 1 -2*b*xy[i] == 0:
             raise Exception('V%s causes division by zero (=1/2b) at t = %s' % (i,t))
     res = np.zeros(2*neqs)
-#    res[neqs]= (1/((k**2)*L*C0*(1 -2*b*xy[0])))*(L*C0 * 2*b*(k*xy[neqs])**2 + ufunc(t,0) + cycling*xy[neqs-1] + xy[1] - 2*xy[0] - R1*C0 *k*(xy[neqs] - 2*b*xy[0]*xy[neqs]) - R2*C0*k*(2*(xy[neqs] - 2*b*xy[0]*xy[neqs])-(xy[neqs+1] - 2*b*xy[1]*xy[neqs+1])-cycling*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1])))
+    bund_len = (neqs-1)/3  # must be integer!
+#  the node has the last index    
+# first bundle
     res[neqs]= (1/((k**2)*L*C0*(1 -2*b*xy[0])))*(L*C0 * 2*b*(k*xy[neqs])**2 + ufunc(t,0) + cycling*xy[neqs-1] + xy[1] - (1+cycling)*xy[0] - R1*C0 *k*(xy[neqs] - 2*b*xy[0]*xy[neqs]) - R2*C0*k*((1+cycling)*(xy[neqs] - 2*b*xy[0]*xy[neqs])-(xy[neqs+1] - 2*b*xy[1]*xy[neqs+1])-cycling*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1])))
-    for i in range(1,neqs-1):
+    for i in range(1,bund_len):
+        res[neqs+i]= (1/((k**2)*L*C0*(1 -2*b*xy[i])))*(L*C0 * 2*b*(k*xy[neqs+i])**2 + ufunc(t,i) + xy[i-1] + xy[i+1] - 2*xy[i] - R1*C0 *k*(xy[neqs+i] - 2*b*xy[i]*xy[neqs+i]) - R2*C0*k*(2*(xy[neqs+i] - 2*b*xy[i]*xy[neqs+i])-(xy[neqs+i+1] - 2*b*xy[i+1]*xy[neqs+i+1])-(xy[neqs+i-1] - 2*b*xy[i-1]*xy[neqs+i-1])))
+# second bundle
+    res[neqs+bund_len]= (1/((k**2)*L*C0*(1 -2*b*xy[bund_len])))*(L*C0 * 2*b*(k*xy[neqs+bund_len])**2 + ufunc(t,bund_len) + cycling*xy[neqs-1+bund_len] + xy[1+bund_len] - (1+cycling)*xy[bund_len] - R1*C0 *k*(xy[neqs+bund_len] - 2*b*xy[bund_len]*xy[neqs+bund_len]) - R2*C0*k*((1+cycling)*(xy[neqs+bund_len] - 2*b*xy[0]*xy[neqs+bund_len])-(xy[neqs+1+bund_len] - 2*b*xy[1]*xy[neqs+1+bund_len])-cycling*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1])))
+    for i in range(1,bund_len):
         res[neqs+i]= (1/((k**2)*L*C0*(1 -2*b*xy[i])))*(L*C0 * 2*b*(k*xy[neqs+i])**2 + ufunc(t,i) + xy[i-1] + xy[i+1] - 2*xy[i] - R1*C0 *k*(xy[neqs+i] - 2*b*xy[i]*xy[neqs+i]) - R2*C0*k*(2*(xy[neqs+i] - 2*b*xy[i]*xy[neqs+i])-(xy[neqs+i+1] - 2*b*xy[i+1]*xy[neqs+i+1])-(xy[neqs+i-1] - 2*b*xy[i-1]*xy[neqs+i-1])))
     
     res[2*neqs-1]= (1/((k**2)*L*C0*(1 -2*b*xy[neqs-1])))*(L*C0 * 2*b*(k*xy[2*neqs-1])**2 + ufunc(t,neqs-1) +cycling*xy[0] + xy[neqs-2] - (1+cycling)*xy[neqs-1] - R1*C0 *k*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1]) - R2*C0*k*((1+cycling)*(xy[2*neqs-1] - 2*b*xy[neqs-1]*xy[2*neqs-1])-(xy[2*neqs-2] - 2*b*xy[neqs-2]*xy[2*neqs-2])-cycling*(xy[neqs] - 2*b*xy[0]*xy[neqs])))
@@ -170,7 +179,7 @@ xy=np.zeros(neqs*2)
 r = ode(model1).set_integrator('lsoda', method='bdf',nsteps=5000)
 #r = ode(model1).set_integrator('vode', method='bdf',nsteps=5000)
 r.set_initial_value(xy, 0)
-dt=0.001 #  dt=0.001  # for low density bundles, as numerical integration is mode difficult
+dt=0.1 #  dt=0.001  # for low density bundles, as numerical integration is mode difficult
 stepi=0
 time80 = -1   # when the last element reaches 80% of the input (supposing input == 1)
 time05 = -1   # when the first element goes back to zero
