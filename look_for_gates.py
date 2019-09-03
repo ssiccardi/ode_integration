@@ -53,6 +53,18 @@ found_not = []
 found_and = []
 found_or = []
 found_xor = []
+nand2 = 0
+nand1 = 0
+nand05 = 0
+nnot2 = 0
+nnot1 = 0
+nnot05 = 0
+nor2 = 0
+nor1 = 0
+nor05 = 0
+nxor2 = 0
+nxor1 = 0
+nxor05 = 0
 
 k=0
 for edg in edges:
@@ -61,12 +73,15 @@ for edg in edges:
         for elem in tocheck[1]:
             if inits[elem[0]][bc] != int(edg[elem[0]+33]) and inits[elem[1]][bc] != int(edg[elem[1]+33]):
                 found_not.append([edg[0],2.0,bc+1,[(inits[elem[0]][4],edg[elem[0]+33]),(inits[elem[1]][4],edg[elem[1]+33])]])
+                nnot2 = nnot2 + 1
                 continue
             if inits[elem[0]][bc] != int(edg[elem[0]+17]) and inits[elem[1]][bc] != int(edg[elem[1]+17]):
                 found_not.append([edg[0],1.0,bc+1,[(inits[elem[0]][4],edg[elem[0]+17]),(inits[elem[1]][4],edg[elem[1]+17])]])
+                nnot1 = nnot1 + 1
                 continue
             if inits[elem[0]][bc] != int(edg[elem[0]+1]) and inits[elem[1]][bc] != int(edg[elem[1]+1]):
                 found_not.append([edg[0],0.5,bc+1,[(inits[elem[0]][4],edg[elem[0]+1]),(inits[elem[1]][4],edg[elem[1]+1])]])
+                nnot05 = nnot05 + 1
 
     for tocheck in check_others:
         bc1 = tocheck[0][0]-1
@@ -76,38 +91,41 @@ for edg in edges:
             if (inits[elem[0]][bc1] or inits[elem[0]][bc2]) == int(edg[elem[0]+33]) and (inits[elem[1]][bc1] or inits[elem[1]][bc2]) == int(edg[elem[1]+33]) and \
                 (inits[elem[2]][bc1] or inits[elem[2]][bc2]) == int(edg[elem[2]+33]) and (inits[elem[3]][bc1] or inits[elem[3]][bc2]) == int(edg[elem[3]+33]):
                 found_or.append([edg[0],2.0,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+33]),(inits[elem[1]][4],edg[elem[1]+33]),(inits[elem[2]][4],edg[elem[2]+33]),(inits[elem[3]][4],edg[elem[3]+33])]])
-                continue
-            if (inits[elem[0]][bc1] or inits[elem[0]][bc2]) == int(edg[elem[0]+17]) and (inits[elem[1]][bc1] or inits[elem[1]][bc2]) == int(edg[elem[1]+17]) and \
+                nor2 = nor2 + 1
+            elif (inits[elem[0]][bc1] or inits[elem[0]][bc2]) == int(edg[elem[0]+17]) and (inits[elem[1]][bc1] or inits[elem[1]][bc2]) == int(edg[elem[1]+17]) and \
                 (inits[elem[2]][bc1] or inits[elem[2]][bc2]) == int(edg[elem[2]+17]) and (inits[elem[3]][bc1] or inits[elem[3]][bc2]) == int(edg[elem[3]+17]):
                 found_or.append([edg[0],1.0,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+17]),(inits[elem[1]][4],edg[elem[1]+17]),(inits[elem[2]][4],edg[elem[2]+17]),(inits[elem[3]][4],edg[elem[3]+17])]])
-                continue
-            if (inits[elem[0]][bc1] or inits[elem[0]][bc2]) == int(edg[elem[0]+1]) and  (inits[elem[1]][bc1] or inits[elem[1]][bc2]) == int(edg[elem[1]+1]) and \
+                nor1 = nor1 + 1
+            elif (inits[elem[0]][bc1] or inits[elem[0]][bc2]) == int(edg[elem[0]+1]) and  (inits[elem[1]][bc1] or inits[elem[1]][bc2]) == int(edg[elem[1]+1]) and \
                 (inits[elem[2]][bc1] or inits[elem[2]][bc2]) == int(edg[elem[2]+1]) and (inits[elem[3]][bc1] or inits[elem[3]][bc2]) == int(edg[elem[3]+1]):
                 found_or.append([edg[0],0.5,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+1]),(inits[elem[1]][4],edg[elem[1]+1]),(inits[elem[2]][4],edg[elem[2]+1]),(inits[elem[3]][4],edg[elem[3]+1])]])
+                nor05 = nor05 + 1
         # AND
             if (inits[elem[0]][bc1] and inits[elem[0]][bc2]) == int(edg[elem[0]+33]) and (inits[elem[1]][bc1] and inits[elem[1]][bc2]) == int(edg[elem[1]+33]) and \
                 (inits[elem[2]][bc1] and inits[elem[2]][bc2]) == int(edg[elem[2]+33]) and (inits[elem[3]][bc1] and inits[elem[3]][bc2]) == int(edg[elem[3]+33]):
                 found_and.append([edg[0],2.0,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+33]),(inits[elem[1]][4],edg[elem[1]+33]),(inits[elem[2]][4],edg[elem[2]+33]),(inits[elem[3]][4],edg[elem[3]+33])]])
-                continue
-            if (inits[elem[0]][bc1] and inits[elem[0]][bc2]) == int(edg[elem[0]+17]) and (inits[elem[1]][bc1] and inits[elem[1]][bc2]) == int(edg[elem[1]+17]) and \
+                nand2 = nand2 + 1
+            elif (inits[elem[0]][bc1] and inits[elem[0]][bc2]) == int(edg[elem[0]+17]) and (inits[elem[1]][bc1] and inits[elem[1]][bc2]) == int(edg[elem[1]+17]) and \
                 (inits[elem[2]][bc1] and inits[elem[2]][bc2]) == int(edg[elem[2]+17]) and (inits[elem[3]][bc1] and inits[elem[3]][bc2]) == int(edg[elem[3]+17]):
                 found_and.append([edg[0],1.0,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+17]),(inits[elem[1]][4],edg[elem[1]+17]),(inits[elem[2]][4],edg[elem[2]+17]),(inits[elem[3]][4],edg[elem[3]+17])]])
-                continue
-            if (inits[elem[0]][bc1] and inits[elem[0]][bc2]) == int(edg[elem[0]+1]) and (inits[elem[1]][bc1] and inits[elem[1]][bc2]) == int(edg[elem[1]+1]) and \
+                nand1 = nand1 + 1
+            elif (inits[elem[0]][bc1] and inits[elem[0]][bc2]) == int(edg[elem[0]+1]) and (inits[elem[1]][bc1] and inits[elem[1]][bc2]) == int(edg[elem[1]+1]) and \
                 (inits[elem[2]][bc1] and inits[elem[2]][bc2]) == int(edg[elem[2]+1]) and (inits[elem[3]][bc1] and inits[elem[3]][bc2]) == int(edg[elem[3]+1]):
                 found_and.append([edg[0],0.5,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+1]),(inits[elem[1]][4],edg[elem[1]+1]),(inits[elem[2]][4],edg[elem[2]+1]),(inits[elem[3]][4],edg[elem[3]+1])]])
+                nand05 = nand05 + 1
         # XOR
             if ((inits[elem[0]][bc1] + inits[elem[0]][bc2])%2) == int(edg[elem[0]+33]) and ((inits[elem[1]][bc1] + inits[elem[1]][bc2])%2) == int(edg[elem[1]+33]) and \
                 ((inits[elem[2]][bc1] + inits[elem[2]][bc2])%2) == int(edg[elem[2]+33]) and ((inits[elem[3]][bc1] + inits[elem[3]][bc2])%2) == int(edg[elem[3]+33]):
                 found_xor.append([edg[0],2.0,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+33]),(inits[elem[1]][4],edg[elem[1]+33]),(inits[elem[2]][4],edg[elem[2]+33]),(inits[elem[3]][4],edg[elem[3]+33])]])
-                continue
-            if ((inits[elem[0]][bc1] + inits[elem[0]][bc2])%2) == int(edg[elem[0]+17]) and ((inits[elem[1]][bc1] + inits[elem[1]][bc2])%2) == int(edg[elem[1]+17]) and \
+                nxor2 = nxor2 + 1
+            elif ((inits[elem[0]][bc1] + inits[elem[0]][bc2])%2) == int(edg[elem[0]+17]) and ((inits[elem[1]][bc1] + inits[elem[1]][bc2])%2) == int(edg[elem[1]+17]) and \
                 ((inits[elem[2]][bc1] + inits[elem[2]][bc2])%2) == int(edg[elem[2]+17]) and ((inits[elem[3]][bc1] + inits[elem[3]][bc2])%2) == int(edg[elem[3]+17]):
                 found_xor.append([edg[0],1.0,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+17]),(inits[elem[1]][4],edg[elem[1]+17]),(inits[elem[2]][4],edg[elem[2]+17]),(inits[elem[3]][4],edg[elem[3]+17])]])
-                continue
+                nxor1 = nxor1 + 1
             if ((inits[elem[0]][bc1] + inits[elem[0]][bc2])%2) == int(edg[elem[0]+1]) and ((inits[elem[1]][bc1] + inits[elem[1]][bc2])%2) == int(edg[elem[1]+1]) and \
                 ((inits[elem[2]][bc1] + inits[elem[2]][bc2])%2) == int(edg[elem[2]+1]) and ((inits[elem[3]][bc1] + inits[elem[3]][bc2])%2) == int(edg[elem[3]+1]):
                 found_xor.append([edg[0],0.5,tocheck[2],[(inits[elem[0]][4],edg[elem[0]+1]),(inits[elem[1]][4],edg[elem[1]+1]),(inits[elem[2]][4],edg[elem[2]+1]),(inits[elem[3]][4],edg[elem[3]+1])]])
+                nxor05 = nxor05 + 1
     k=k+1
     if k % 200 == 0:
     # odometer...
@@ -117,14 +135,36 @@ workbook = xlwt.Workbook(encoding='utf8')
 worksheet = workbook.add_sheet('NOT gates')
 
 worksheet.write(0,0,"NOT gates")
+worksheet.write(0,1,len(found_not))
+worksheet.write(0,2,"List of first 20000 rows, not redundant")
 i=1
+worksheet.write(i,0,"N.found with threshold 2:")
+worksheet.write(i,1,nnot2)
+i=i+1
+worksheet.write(i,0,"N.found with threshold 1:")
+worksheet.write(i,1,nnot1)
+i=i+1
+worksheet.write(i,0,"N.found with threshold .5:")
+worksheet.write(i,1,nnot05)
+i=i+1
 worksheet.write(i,0,"Edge")
 worksheet.write(i,1,"Threshold")
 worksheet.write(i,2,"Input bit")
 worksheet.write(i,3,"Input state")
 worksheet.write(i,4,"Output")
 
+pre_gat = ""
+pre_bit = ""
+other_states = False
 for gate in found_not:
+    if gate[0] == pre_gat and gate[2] == pre_bit:
+        if not other_states:
+            worksheet.write(i,5,"Other equivalent input states too")
+            other_states = True
+        continue
+    other_states = False
+    pre_gat = gate[0]
+    pre_bit = gate[2]
     i=i+1
     worksheet.write(i,0,gate[0])
     worksheet.write(i,1,gate[1])
@@ -140,14 +180,36 @@ for gate in found_not:
 
 worksheett = workbook.add_sheet('OR gates')
 worksheett.write(0,0,"OR gates")
+worksheett.write(0,1,len(found_or))
+worksheett.write(0,2,"List of first 20000 rows, not redundant")
 i=1
+worksheett.write(i,0,"N.found with threshold 2:")
+worksheett.write(i,1,nor2)
+i=i+1
+worksheett.write(i,0,"N.found with threshold 1:")
+worksheett.write(i,1,nor1)
+i=i+1
+worksheett.write(i,0,"N.found with threshold .5:")
+worksheett.write(i,1,nor05)
+i=i+1
 worksheett.write(i,0,"Edge")
 worksheett.write(i,1,"Threshold")
 worksheett.write(i,2,"Input bits")
 worksheett.write(i,3,"Input state")
 worksheett.write(i,4,"Output")
 
+pre_gat = ""
+pre_bit = ""
+other_states = False
 for gate in found_or:
+    if gate[0] == pre_gat and gate[2] == pre_bit:
+        if not other_states:
+            worksheett.write(i,5,"Other equivalent input states too")
+            other_states = True
+        continue
+    other_states = False
+    pre_gat = gate[0]
+    pre_bit = gate[2]
     i=i+1
     worksheett.write(i,0,gate[0])
     worksheett.write(i,1,gate[1])
@@ -169,14 +231,36 @@ for gate in found_or:
 
 worksheett1 = workbook.add_sheet('AND gates')
 worksheett1.write(0,0,"AND gates")
+worksheett1.write(0,1,len(found_and))
+worksheett1.write(0,2,"List of first 20000 rows, not redundant")
 i=1
+worksheett1.write(i,0,"N.found with threshold 2:")
+worksheett1.write(i,1,nand2)
+i=i+1
+worksheett1.write(i,0,"N.found with threshold 1:")
+worksheett1.write(i,1,nand1)
+i=i+1
+worksheett1.write(i,0,"N.found with threshold .5:")
+worksheett1.write(i,1,nand05)
+i=i+1
 worksheett1.write(i,0,"Edge")
 worksheett1.write(i,1,"Threshold")
 worksheett1.write(i,2,"Input bits")
 worksheett1.write(i,3,"Input state")
 worksheett1.write(i,4,"Output")
 
+pre_gat = ""
+pre_bit = ""
+other_states = False
 for gate in found_and:
+    if gate[0] == pre_gat and gate[2] == pre_bit:
+        if not other_states:
+            worksheett1.write(i,5,"Other equivalent input states too")
+            other_states = True
+        continue
+    other_states = False
+    pre_gat = gate[0]
+    pre_bit = gate[2]
     i=i+1
     worksheett1.write(i,0,gate[0])
     worksheett1.write(i,1,gate[1])
@@ -196,16 +280,37 @@ for gate in found_and:
         break
 
 worksheett2 = workbook.add_sheet('XOR gates')
-
 worksheett2.write(0,0,"XOR gates")
+worksheett2.write(0,1,len(found_xor))
+worksheett2.write(0,2,"List of first 20000 rows, not redundant")
 i=1
+worksheett2.write(i,0,"N.found with threshold 2:")
+worksheett2.write(i,1,nxor2)
+i=i+1
+worksheett2.write(i,0,"N.found with threshold 1:")
+worksheett2.write(i,1,nxor1)
+i=i+1
+worksheett2.write(i,0,"N.found with threshold .5:")
+worksheett2.write(i,1,nxor05)
+i=i+1
 worksheett2.write(i,0,"Edge")
 worksheett2.write(i,1,"Threshold")
 worksheett2.write(i,2,"Input bits")
 worksheett2.write(i,3,"Input state")
 worksheett2.write(i,4,"Output")
 
+pre_gat = ""
+pre_bit = ""
+other_states = False
 for gate in found_xor:
+    if gate[0] == pre_gat and gate[2] == pre_bit:
+        if not other_states:
+            worksheett2.write(i,5,"Other equivalent input states too")
+            other_states = True
+        continue
+    other_states = False
+    pre_gat = gate[0]
+    pre_bit = gate[2]
     i=i+1
     worksheett2.write(i,0,gate[0])
     worksheett2.write(i,1,gate[1])

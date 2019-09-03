@@ -8,16 +8,16 @@ import random as rng
 
 # basic parameters
 b = 0.02 # tested also b=0.2 
-ek = 10
+ek = 9
 k=10**ek   # k=10**10 # for low density
-neqs = 32  # does not succeed with 400 eqs 
+neqs = 128  # does not succeed with 400 eqs 
 fine = 1000
 durata = 10000
 #electrodes = [0,1,2] # to test with an external potential at the first electrodes
-electrodes = [0,31]
+electrodes = [0,63]
 v_electrodes = [1,-1,-1,1,-1,-1]
 newinit = 0  # to restart integration
-cycling = 0  # if =1 the bundle is cloed on itslef
+cycling = 1  # if =1 the bundle is cloed on itslef
 
 # single filament
 #L = 1.7*10**-12
@@ -26,17 +26,17 @@ cycling = 0  # if =1 the bundle is cloed on itslef
 #R2 = 0.9*10**6
 #tit="Filament, total %s elements"
 # high density bundle 450nm width (integration converges easily)
-#L = 8378*10**-12
-#C0 = 76*10**-16  
-#R1 = 0.077*10**6
-#R2 = R1/7
-#tit="H.D. bundle 450nm thick, total %s elements"
+L = 8378*10**-12
+C0 = 76*10**-16  
+R1 = 0.077*10**6
+R2 = R1/7
+tit="H.D. bundle 450nm thick, total %s elements"
 # low density bundle 50 filaments
-L = 3.83*10**-14
-C0 = 2*10**-18  
-R1 = 0.11*10**6
-R2 = 50*R1/7  # series-addition formula for resistance
-tit="L.D. bundle of 50 filaments, total %s elements"
+#L = 3.83*10**-14
+#C0 = 2*10**-18  
+#R1 = 0.11*10**6
+#R2 = 50*R1/7  # series-addition formula for resistance
+#tit="L.D. bundle of 50 filaments, total %s elements"
 
 
 
@@ -170,7 +170,7 @@ xy=np.zeros(neqs*2)
 r = ode(model1).set_integrator('lsoda', method='bdf',nsteps=5000)
 #r = ode(model1).set_integrator('vode', method='bdf',nsteps=5000)
 r.set_initial_value(xy, 0)
-dt=0.001 #  dt=0.001  # for low density bundles, as numerical integration is mode difficult
+dt=0.1 #  dt=0.001  # for low density bundles, as numerical integration is mode difficult
 stepi=0
 time80 = -1   # when the last element reaches 80% of the input (supposing input == 1)
 time05 = -1   # when the first element goes back to zero

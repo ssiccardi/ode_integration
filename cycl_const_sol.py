@@ -5,6 +5,7 @@ import csv
 import random as rng
 import xlwt
 from optparse import OptionParser
+import math
 
 #import io
 
@@ -42,6 +43,7 @@ noutput = 4
 
 pixlen = 20000 / 1024 *0.37 # this is the number of elements in a pixel: if the picture height = width = 20000 nm, a pixel spans 20000/1024 nm
                             # as we suppose that there are 370 elements in 1000 nm we have the above formula
+pixnano = 20 / 1024 * 10**-6
 print("number of elements in a pixel: %s" % pixlen)
 
 #########################
@@ -73,8 +75,19 @@ nedges = 0
 # 1) dictionary - key (for easy of retrieval): p1-p2, data [p1, p2, lenght in pixels, number of elements, width in pixels, values of extremes with 3 different thresholds]
 # 2) list - [key] (may be useful to index the dictionary)
 totlen = 0
-timefiber = 0
+rhokna = 1/(7.4*0.15+5*0.02)
+print("rhokna: %s" % rhokna)
+bjerr = 0.000000000712888
+pi2l =2*math.pi*5.4*10**-9
+print("pi2l: %s" % pi2l)
+rhokna = rhokna / pi2l
+print("rhokna: %s" % rhokna)
+epsi = 80 * 8.854187817*10**-12
+filperpix2 = 0.24 # we take the mean of the filaments per bundle reported by experiments (50-60 +-25 = (25+85)/2 = 55 and the area of a circle with the average radius found (8.48) = 226
+                  # and consider 55 / 226 the number of fibers in a circle of a pixel radius
+timefiber = 0  # values for 0.713 Bjerrum length
 timehd = 0
+timeld = 0
 for edge in edges:
     if loading == False:
         if edge[0] == 'id':
@@ -95,15 +108,23 @@ for edge in edges:
         pass
     myedges[key] = [int(edge[1]),int(edge[2]),l_edge,round(l_edge*pixlen),w_edge,[],[],[]]
     totlen = totlen + round(l_edge*pixlen)
-    timefiber = timefiber + round(l_edge*pixlen)*(96*10**-18)*(6.11*10**6)
-#    timehd = timehd + round(l_edge*pixlen)
+    timefiber = timefiber + round(l_edge*pixlen)*(102.6*10**-18)*(5.7*10**6)
+    rbun = w_edge * pixnano
+    logar = math.log((bjerr+rbun)/rbun)
+    c0hd = pi2l * epsi / logar
+    r1hd = rhokna * logar
+    timehd = timehd + round(l_edge*pixlen)* c0hd * r1hd
+    nfibers = round(math.pi * w_edge**2 * filperpix2,0)
+    if nfibers > 0:
+        timeld = timeld + round(l_edge*pixlen)*(102.6*10**-18/nfibers)*(5.7*10**6/nfibers)
     wedges.append(key)
     nedges = nedges + 1
 
 print("I consider %s edges" % nedges)
 print("Total number of elements: %s" % totlen)
 print("Characteristic time with single fiber parameters: %s" % timefiber)
-## TODO compute the time to travel the network, as R1C0 (time to discharge an electric unit), using the data for a filament, a hd and a ld bundle and its computed width
+print("Characteristic time with hd bundles parameters: %s" % timehd)
+print("Characteristic time with ld bundles parameters: %s" % timeld)
 
 # choose random input and output positions; positions are by convention = number of elements from the lower index node
 inp_pos = []
@@ -367,6 +388,7 @@ for starting in inits:
             worksheet.write(i,2,node[3])
             tmp = node[5]
             tmp = tmp.replace(".",",")  # for italian excel
+#            worksheet.write(i,3,xlwt.Formula(tmp))
             worksheet.write(i,3,tmp)
             i=i+1
 #    print("Node %s: %s (check: 1=%s)" % (node[0],round(node[3],3),node[4]))
