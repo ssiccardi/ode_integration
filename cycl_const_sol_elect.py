@@ -13,7 +13,7 @@ parser = OptionParser()
 parser.add_option("-I", "--input", dest="fname",metavar="IM_NAME",
                   help="Choose File name suffix")
 parser.add_option("-O", "--output", dest="xls",
-                  help="Any value to save xls file")
+                  help="A number to save xls file for the corresponding state")
 parser.add_option("-E", "--edges", dest="rndinp",
                   help="File name of csv with input/output positions, otherwise random positions are used")
 parser.add_option("-S", "--nstates", dest="nstates",
@@ -21,9 +21,9 @@ parser.add_option("-S", "--nstates", dest="nstates",
 (optlist, args) = parser.parse_args()
 
 if not optlist.xls:
-    xls = False
+    xls = -1
 else:
-    xls = True
+    xls = int(optlist.xls)
 
 if not optlist.fname:
     fname = ""
@@ -35,7 +35,7 @@ if not optlist.rndinp:
 else:
     rndinp = "_"+optlist.rndinp
 
-if not optlist.xls:
+if not optlist.nstates:
     nstates = 4
     inits = list(csv.reader(open('data/inits_ok4.csv'), delimiter=","))
 else:
@@ -63,6 +63,7 @@ myedges = {}
 wedges = []
 wnodes = []
 elect = []  # list of indexes of electrodes
+elect_names = [] # list of electrodes names
 
 loading = False
 nnodes = 0
@@ -77,6 +78,7 @@ for node in nodes:
     wnodes.append(node[0])
     if node[5] == "E":
         elect.append(node[0])
+        elect_names.append(node[6])
         nelect = nelect + 1
     nnodes = nnodes + 1
 
@@ -142,7 +144,9 @@ print("Characteristic time with ld bundles parameters: %s" % timeld)
 # choose random input and output positions; positions are by convention = number of elements from the lower index node
 inp_pos = []
 inp_edg = []
-inp_kedg = []
+inp_kedg = [] # contains the key of all the edges connected to an input node, 
+inp_kval = [] # contains the progressive number of the input to find the value to apply
+inp_kfact = [] # factor to divide input value (= nodes linked to electrode)
 inp_elect = []
 out_pos = []
 out_edg = []
@@ -156,25 +160,38 @@ if not rndinp:
         inp_edg.append(edg)
         tmp = elect[edg]  # electrode ID as a node
         inp_elect.append(tmp)
-        elenode = next(nnn for nnn in mynodes if mynodes[0] == tmp)
+        elenode = next(nnn for nnn in mynodes if nnn[0] == tmp)
         for eleconn in elenode[1]:
             key = tmp+'-'+eleconn
             if key in myedges:
                 inp_kedg.append(key)
+                pos = 1
             else:
                 inp_kedg.append(eleconn+'-'+tmp)
+                pos = myedges[eleconn+'-'+tmp][2]-1
+            inp_kval.append(i)
+            inp_kfact.append(len(elenode[1]))
             inp_pos.append(1)  # would be better 0??
-            print("input %s in edge %s at pos %s" % (i,key,pos))
+            print("input %s in edge %s at pos 1" % (i,key))
         i = i + 1
 #print(inp_edg)
 #print(inp_pos)
 
 ############################
 #  actually output positions are not used, but we build a list of unused eletrodes, that can be used as output
+#  and another of output pairs pairs: out_edg = index of elect 1, index of elect2, name of elect1, name of elect2, space for values at thresh 0.5, 1 and 2
 ############################
     for ele in elect:
         if not ele in inp_elect:
             out_pos.append(ele)
+    i=0
+    for ele in out_pos:
+        i=i+1
+        elestruct = next(nnn for nnn in mynodes if nnn[0] == ele)
+        elename = elect_names[elect.index(ele)]
+        for ele2 in out_pos[i:]:
+            elestruct2 = next(nnn for nnn in mynodes if nnn[0] == ele2)
+            out_edg.append([mynodes.index(elestruct),mynodes.index(elestruct2), elename, elect_names[elect.index(ele2)],[],[],[]])
 #    i=0
 #    while len(out_edg) < noutput:
 #        edg = rng.randint(0,nedges-1)
@@ -269,7 +286,7 @@ for starting in inits:
     for node in mynodes:
         n = len(node[1])
         m = wnodes.index(node[0])+2
-        equat = "=-%s*C%s" % (n,m)
+        equat = "-%s*C%s" % (n,m)    # no '=' at the beginning to be written as a formula
         for linked in node[1]:
             key = node[0]+'-'+linked
             if key in myedges:
@@ -288,10 +305,13 @@ for starting in inits:
 
 
             # look for 0 degree term
+            ### the TOTAL number of +1 and -1 terms must match. As we have a different number of edges linked to each electrode, we must use +-1/(number of linked edges), that is 
+            #      in accordance with Kirchhoff law of nodes
             if key in inp_kedg:
                 kk = inp_kedg.index(key)
                 pp = inp_pos[kk]
-                vv = vinput[kk]
+                keyinp = inp_kval[kk]
+                vv = vinput[keyinp]/inp_kfact[kk]
                 if vv>0:
                     signvv = '-'
                 else:
@@ -302,12 +322,13 @@ for starting in inits:
                 else:
                     node[3] = node[3] - vv * (pp/edge[3])*(1/n)    
                     equat = equat + signvv + "%s" % str(abs(vv) * pp/edge[3])
-                # to manage 2 input input in the same edge
+                # to manage 2 input in the same edge
                 if key in inp_kedg[kk+1:]:
                     jj = inp_kedg[kk+1:].index(key)
                     kk * kk+jj+1
                     pp = inp_pos[kk]
-                    vv = vinput[kk]
+                    keyinp = inp_kval[kk]
+                    vv = vinput[keyinp]
                     if vv>0:
                         signvv = '-'
                     else:
@@ -397,8 +418,8 @@ for starting in inits:
             back = False
 ##    go_on = False
 
-# print all the nodes' values and equations in xls
-    if xls == True:
+# print all the nodes' values and equations in xls if requested of a state
+    if xls == nturn:
         workbook = xlwt.Workbook(encoding='utf8')
         worksheet = workbook.add_sheet('Nodes')
         worksheet.write(0,0,"Index")
@@ -412,9 +433,9 @@ for starting in inits:
             worksheet.write(i,1,node[1])
             worksheet.write(i,2,node[3])
             tmp = node[5]
-            tmp = tmp.replace(".",",")  # for italian excel
-#            worksheet.write(i,3,xlwt.Formula(tmp))
-            worksheet.write(i,3,tmp)
+#            tmp = tmp.replace(".",",")  # for italian excel
+            worksheet.write(i,3,xlwt.Formula(tmp))
+#            worksheet.write(i,3,tmp)
             i=i+1
 #    print("Node %s: %s (check: 1=%s)" % (node[0],round(node[3],3),node[4]))
 
@@ -425,140 +446,142 @@ for starting in inits:
 
 ################### all to check and change for electeodes support
 
-    i=0
-    results = []
-    results05 = []
-    results2 = []
-    i=1
-    for onode1 in out_pos:
-        ooo1 = mynodes[wnodes.index(onode1)]
-        out1=float(ooo1[3])
-        if i < len(out_pos):
-            othnodes = out_pos[i:]
-            for onode2 in othnodes:
-                ooo2 = mynodes[wnodes.index(onode2)]
-                out2=float(ooo2[3])
-#        print("Potential at the nodes of output %s (%s):" % (i, wedges[edg]))
-#        print("   Node %s: %s" % (tmp[0], out1))
-#        print("   Node %s: %s" % (tmp[1], out2))
-            diff = out1-out2
-#        print("   Diff. = %s" % diff)
-            if abs(diff)>= 1:
-                results.append(1)
-            else:
-                results.append(0)
-            if abs(diff)>= 0.5:
-                results05.append(1)
-            else:
-                results05.append(0)
-            if abs(diff)>= 2:
-                results2.append(1)
-            else:
-                results2.append(0)
-            i=i+1
+#    i=0
+#    results = []
+#    results05 = []
+#    results2 = []
+#    i=1
+#    for onode1 in out_pos:
+#        ooo1 = mynodes[wnodes.index(onode1)]
+#        out1=float(ooo1[3])
+#        if i < len(out_pos):
+#            othnodes = out_pos[i:]
+#            for onode2 in othnodes:
+#                ooo2 = mynodes[wnodes.index(onode2)]
+#                out2=float(ooo2[3])
+##        print("Potential at the nodes of output %s (%s):" % (i, wedges[edg]))
+##        print("   Node %s: %s" % (tmp[0], out1))
+##        print("   Node %s: %s" % (tmp[1], out2))
+#            diff = out1-out2
+##        print("   Diff. = %s" % diff)
+#            if abs(diff)>= 1:
+#                results.append(1)
+#            else:
+#                results.append(0)
+#            if abs(diff)>= 0.5:
+#                results05.append(1)
+#            else:
+#                results05.append(0)
+#            if abs(diff)>= 2:
+#                results2.append(1)
+#            else:
+#                results2.append(0)
+#            i=i+1
 
-    outr.append(results)
-    outr05.append(results05)
-    outr2.append(results2)
-    print(starting)
-    print(results)
-    print("====================")
+#    outr.append(results)
+#    outr05.append(results05)
+#    outr2.append(results2)
+#    print(starting)
+#    print(results)
+#    print("====================")
 #   save all the results to look for logical gates
-    for edg in wedges:
-        myedg=myedges[edg]
-        out1=float(mynodes[wnodes.index(str(myedg[0]))][3])
-        out2=float(mynodes[wnodes.index(str(myedg[1]))][3])
+    for edg in out_edg:
+        out1=float(mynodes[edg[0]][3])
+        out2=float(mynodes[edg[1]][3])
         diff = abs(out1-out2)
         if diff>=0.5:
-            myedg[5].append(1)
+            edg[4].append(1)
         else:
-            myedg[5].append(0)
+            edg[4].append(0)
         if diff>=1:
-            myedg[6].append(1)
+            edg[5].append(1)
         else:
-            myedg[6].append(0)
+            edg[5].append(0)
         if diff>=2:
-            myedg[7].append(1)
+            edg[6].append(1)
         else:
-            myedg[7].append(0)
+            edg[6].append(0)
 
-workbookr = xlwt.Workbook(encoding='utf8')
-worksheetr = workbookr.add_sheet('Results')
-worksheetr.write(0,0,"I1")
-worksheetr.write(0,1,"I2")
-worksheetr.write(0,2,"I3")
-worksheetr.write(0,3,"I4")
-worksheetr.write(0,4,"O1-1")
-worksheetr.write(0,5,"O2-1")
-worksheetr.write(0,6,"O3-1")
-worksheetr.write(0,7,"O4-1")
-worksheetr.write(0,10,"I1")
-worksheetr.write(0,11,"I2")
-worksheetr.write(0,12,"I3")
-worksheetr.write(0,13,"I4")
-worksheetr.write(0,14,"O1-05")
-worksheetr.write(0,15,"O2-05")
-worksheetr.write(0,16,"O3-05")
-worksheetr.write(0,17,"O4-05")
-worksheetr.write(0,20,"I1")
-worksheetr.write(0,21,"I2")
-worksheetr.write(0,22,"I3")
-worksheetr.write(0,23,"I4")
-worksheetr.write(0,24,"O1-2")
-worksheetr.write(0,25,"O2-2")
-worksheetr.write(0,26,"O3-2")
-worksheetr.write(0,27,"O4-2")
+#workbookr = xlwt.Workbook(encoding='utf8')
+#worksheetr = workbookr.add_sheet('Results')
+#worksheetr.write(0,0,"I1")
+#worksheetr.write(0,1,"I2")
+#worksheetr.write(0,2,"I3")
+#worksheetr.write(0,3,"I4")
+#worksheetr.write(0,4,"O1-1")
+#worksheetr.write(0,5,"O2-1")
+#worksheetr.write(0,6,"O3-1")
+#worksheetr.write(0,7,"O4-1")
+#worksheetr.write(0,10,"I1")
+#worksheetr.write(0,11,"I2")
+#worksheetr.write(0,12,"I3")
+#worksheetr.write(0,13,"I4")
+#worksheetr.write(0,14,"O1-05")
+#worksheetr.write(0,15,"O2-05")
+#worksheetr.write(0,16,"O3-05")
+#worksheetr.write(0,17,"O4-05")
+#worksheetr.write(0,20,"I1")
+#worksheetr.write(0,21,"I2")
+#worksheetr.write(0,22,"I3")
+#worksheetr.write(0,23,"I4")
+#worksheetr.write(0,24,"O1-2")
+#worksheetr.write(0,25,"O2-2")
+#worksheetr.write(0,26,"O3-2")
+#worksheetr.write(0,27,"O4-2")
 
-i = 1
-k = 0
-for starting in inits:
-    worksheetr.write(i,0,starting[0])
-    worksheetr.write(i,1,starting[1])
-    worksheetr.write(i,2,starting[2])
-    worksheetr.write(i,3,starting[3])
-    worksheetr.write(i,4,outr[k][0])
-    worksheetr.write(i,5,outr[k][1])
-    worksheetr.write(i,6,outr[k][2])
-    worksheetr.write(i,7,outr[k][3])
-    worksheetr.write(i,10,starting[0])
-    worksheetr.write(i,11,starting[1])
-    worksheetr.write(i,12,starting[2])
-    worksheetr.write(i,13,starting[3])
-    worksheetr.write(i,14,outr05[k][0])
-    worksheetr.write(i,15,outr05[k][1])
-    worksheetr.write(i,16,outr05[k][2])
-    worksheetr.write(i,17,outr05[k][3])
-    worksheetr.write(i,20,starting[0])
-    worksheetr.write(i,21,starting[1])
-    worksheetr.write(i,22,starting[2])
-    worksheetr.write(i,23,starting[3])
-    worksheetr.write(i,24,outr2[k][0])
-    worksheetr.write(i,25,outr2[k][1])
-    worksheetr.write(i,26,outr2[k][2])
-    worksheetr.write(i,27,outr2[k][3])
-    i=i+1
-    k=k+1
-#    print("Node %s: %s (check: 1=%s)" % (node[0],round(node[3],3),node[4]))
+#i = 1
+#k = 0
+#for starting in inits:
+#    worksheetr.write(i,0,starting[0])
+#    worksheetr.write(i,1,starting[1])
+#    worksheetr.write(i,2,starting[2])
+#    worksheetr.write(i,3,starting[3])
+#    worksheetr.write(i,4,outr[k][0])
+#    worksheetr.write(i,5,outr[k][1])
+#    worksheetr.write(i,6,outr[k][2])
+#    worksheetr.write(i,7,outr[k][3])
+#    worksheetr.write(i,10,starting[0])
+#    worksheetr.write(i,11,starting[1])
+#    worksheetr.write(i,12,starting[2])
+#    worksheetr.write(i,13,starting[3])
+#    worksheetr.write(i,14,outr05[k][0])
+#    worksheetr.write(i,15,outr05[k][1])
+#    worksheetr.write(i,16,outr05[k][2])
+#    worksheetr.write(i,17,outr05[k][3])
+#    worksheetr.write(i,20,starting[0])
+#    worksheetr.write(i,21,starting[1])
+#    worksheetr.write(i,22,starting[2])
+#    worksheetr.write(i,23,starting[3])
+#    worksheetr.write(i,24,outr2[k][0])
+#    worksheetr.write(i,25,outr2[k][1])
+#    worksheetr.write(i,26,outr2[k][2])
+#    worksheetr.write(i,27,outr2[k][3])
+#    i=i+1
+#    k=k+1
+##    print("Node %s: %s (check: 1=%s)" % (node[0],round(node[3],3),node[4]))
 
-print("Saving results")
+#print("Saving results")
 
-workbookr.save('data/poss_gates'+fname+'.xls')
+#workbookr.save('data/poss_gates'+fname+'.xls')
 
 workbookt = xlwt.Workbook(encoding='utf8')
 worksheett = workbookt.add_sheet('Results')
 
 worksheett.write(0,0,"Input positions")
 i=1
-worksheett.write(i,0,"Edge")
-worksheett.write(i,1,"Position")
+worksheett.write(i,0,"Bit")
+worksheett.write(i,1,"Nodes")
 k=0
-for edg in inp_kedg:
-    i=i+1
-    worksheett.write(i,0,edg)
-    worksheett.write(i,1,inp_pos[k])
+i=2
+for edg in elect_names:
     k=k+1
+    if k%2 == 0:
+        worksheett.write(i,0,k/2)
+    worksheett.write(i,1,edg)
+    i=i+1
 i=i+2
 k=1
+############################### modificato fino a qui, da controllare!!!
 worksheett.write(i,0,"Configurations")
 i=i+1
 worksheett.write(i,0,"Conf. Num.")
@@ -566,6 +589,10 @@ worksheett.write(i,1,"I1")
 worksheett.write(i,2,"I2")
 worksheett.write(i,3,"I3")
 worksheett.write(i,4,"I4")
+if nstates == 6:
+    worksheett.write(i,5,"I5")
+    worksheett.write(i,6,"I6")
+
 
 for starting in inits:
     i=i+1
@@ -574,27 +601,34 @@ for starting in inits:
     worksheett.write(i,2,starting[1])
     worksheett.write(i,3,starting[2])
     worksheett.write(i,4,starting[3])
+    if nstates == 6:
+        worksheett.write(i,5,starting[4])
+        worksheett.write(i,6,starting[5])
     k=k+1
 i=i+2
 worksheett.write(i,0,"Results")
 i=i+1
 worksheett.write(i,0,"Edge")
-worksheett.write(i,1,"Threshold = 0.5")
-worksheett.write(i,17,"Threshold = 1.0")
-worksheett.write(i,33,"Threshold = 2.0")
+if nstates == 6:
+    worksheett.write(i,1,"Threshold = 0.5")
+    worksheett.write(i,65,"Threshold = 1.0")
+    worksheett.write(i,129,"Threshold = 2.0")
+else:
+    worksheett.write(i,1,"Threshold = 0.5")
+    worksheett.write(i,17,"Threshold = 1.0")
+    worksheett.write(i,33,"Threshold = 2.0")
 
-for edg in wedges:
+for edg in out_edg:
     i=i+1
-    myedg=myedges[edg]
-    worksheett.write(i,0,edg)
+    worksheett.write(i,0,edg[2]+"-"edg[3])
     k=1
-    for diff in myedg[5]:
+    for diff in edg[4]:
         worksheett.write(i,k,diff)
         k=k+1
-    for diff in myedg[6]:
+    for diff in edg[5]:
         worksheett.write(i,k,diff)
         k=k+1
-    for diff in myedg[7]:
+    for diff in edg[6]:
         worksheett.write(i,k,diff)
         k=k+1
 
