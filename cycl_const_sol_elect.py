@@ -171,7 +171,7 @@ if not rndinp:
                 pos = myedges[eleconn+'-'+tmp][2]-1
             inp_kval.append(i)
             inp_kfact.append(len(elenode[1]))
-            inp_pos.append(1)  # would be better 0??
+            inp_pos.append(pos)  # would be better 0??
             print("input %s in edge %s at pos 1" % (i,key))
         i = i + 1
 #print(inp_edg)
@@ -489,15 +489,15 @@ for starting in inits:
         out1=float(mynodes[edg[0]][3])
         out2=float(mynodes[edg[1]][3])
         diff = abs(out1-out2)
-        if diff>=0.5:
+        if diff>=5:
             edg[4].append(1)
         else:
             edg[4].append(0)
-        if diff>=1:
+        if diff>=10:
             edg[5].append(1)
         else:
             edg[5].append(0)
-        if diff>=2:
+        if diff>=20:
             edg[6].append(1)
         else:
             edg[6].append(0)
@@ -573,11 +573,11 @@ worksheett.write(i,0,"Bit")
 worksheett.write(i,1,"Nodes")
 k=0
 i=2
-for edg in elect_names:
+for edg in inp_edg:
     k=k+1
     if k%2 == 0:
         worksheett.write(i,0,k/2)
-    worksheett.write(i,1,edg)
+    worksheett.write(i,1,elect_names[edg])
     i=i+1
 i=i+2
 k=1
@@ -610,17 +610,17 @@ worksheett.write(i,0,"Results")
 i=i+1
 worksheett.write(i,0,"Edge")
 if nstates == 6:
-    worksheett.write(i,1,"Threshold = 0.5")
-    worksheett.write(i,65,"Threshold = 1.0")
-    worksheett.write(i,129,"Threshold = 2.0")
+    worksheett.write(i,1,"Threshold = 5")
+    worksheett.write(i,65,"Threshold = 1")
+    worksheett.write(i,129,"Threshold = 20")
 else:
-    worksheett.write(i,1,"Threshold = 0.5")
-    worksheett.write(i,17,"Threshold = 1.0")
-    worksheett.write(i,33,"Threshold = 2.0")
+    worksheett.write(i,1,"Threshold = 5")
+    worksheett.write(i,17,"Threshold = 10")
+    worksheett.write(i,33,"Threshold = 20")
 
 for edg in out_edg:
     i=i+1
-    worksheett.write(i,0,edg[2]+"-"edg[3])
+    worksheett.write(i,0,edg[2]+"-"+edg[3])
     k=1
     for diff in edg[4]:
         worksheett.write(i,k,diff)
