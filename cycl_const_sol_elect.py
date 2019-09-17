@@ -6,6 +6,7 @@ import random as rng
 import xlwt
 from optparse import OptionParser
 import math
+import numpy as np
 
 #import io
 
@@ -209,7 +210,12 @@ if not rndinp:
 #        out_pos.append(pos)
 #        print("output %s in edge %s at pos %s" % (i,wedges[edg],pos))
 #        i = i + 1
-
+    if nstates == 4:
+    # to store values that will later thresholded
+        base_out_v = np.zeros(len(out_edg)*16)
+    else:
+        base_out_v = np.zeros(len(out_edg)*64)
+    i_base = 0
 else:
     positions = list(csv.reader(open('data/posits_ok'+rndinp+'.csv'), delimiter=","))
     inp_kedg.append(positions[0][0])
@@ -489,18 +495,22 @@ for starting in inits:
         out1=float(mynodes[edg[0]][3])
         out2=float(mynodes[edg[1]][3])
         diff = abs(out1-out2)
-        if diff>=5:
-            edg[4].append(1)
-        else:
-            edg[4].append(0)
-        if diff>=10:
-            edg[5].append(1)
-        else:
-            edg[5].append(0)
-        if diff>=20:
-            edg[6].append(1)
-        else:
-            edg[6].append(0)
+        # we keep the difference of potentials and will later apply a threshold
+        edg[4].append(diff)
+        base_out_v[i_base] = diff
+        i_base = i_base + 1
+#        if diff>=5:
+#            edg[4].append(1)
+#        else:
+#            edg[4].append(0)
+#        if diff>=10:
+#            edg[5].append(1)
+#        else:
+#            edg[5].append(0)
+#        if diff>=20:
+#            edg[6].append(1)
+#        else:
+#            edg[6].append(0)
 
 #workbookr = xlwt.Workbook(encoding='utf8')
 #worksheetr = workbookr.add_sheet('Results')
@@ -607,29 +617,39 @@ for starting in inits:
     k=k+1
 i=i+2
 worksheett.write(i,0,"Results")
+# compute median of the values to use as a threshold
+mmdiff = np.median(base_out_v)
+mmdiffless = mmdiff * 0.9
+mmdiffplus = mmdiff * 1.1
 i=i+1
 worksheett.write(i,0,"Edge")
 if nstates == 6:
-    worksheett.write(i,1,"Threshold = 5")
-    worksheett.write(i,65,"Threshold = 1")
-    worksheett.write(i,129,"Threshold = 20")
+    worksheett.write(i,1,"Threshold = %s" % mmdiffless)
+    worksheett.write(i,65,"Threshold = %s" % mmdiff)
+    worksheett.write(i,129,"Threshold = %s"% mmdiffplus)
+    dispcol = 64
 else:
-    worksheett.write(i,1,"Threshold = 5")
-    worksheett.write(i,17,"Threshold = 10")
-    worksheett.write(i,33,"Threshold = 20")
-
+    worksheett.write(i,1,"Threshold = %s" % mmdiffless)
+    worksheett.write(i,17,"Threshold = %s" % mmdiff)
+    worksheett.write(i,33,"Threshold = %s"% mmdiffplus)
+    dispcol = 16
 for edg in out_edg:
     i=i+1
     worksheett.write(i,0,edg[2]+"-"+edg[3])
     k=1
     for diff in edg[4]:
-        worksheett.write(i,k,diff)
-        k=k+1
-    for diff in edg[5]:
-        worksheett.write(i,k,diff)
-        k=k+1
-    for diff in edg[6]:
-        worksheett.write(i,k,diff)
+        if diff >= mmdiffless:
+            worksheett.write(i,k,"1")
+        else:
+            worksheett.write(i,k,"0")
+        if diff >= mmdiff:
+            worksheett.write(i,k+dispcol,"1")
+        else:
+            worksheett.write(i,k+dispcol,"0")
+        if diff >= mmdiffplus:
+            worksheett.write(i,k+dispcol*2,"1")
+        else:
+            worksheett.write(i,k+dispcol*2,"0")
         k=k+1
 
 
