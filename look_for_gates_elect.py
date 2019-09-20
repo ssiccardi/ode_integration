@@ -41,12 +41,7 @@ if not optlist.nstates:
     check_others.append([(3,4),[(0,1,2,3),(4,5,6,7),(8,9,10,11),(12,13,14,15)],"3-4"])
 else:
     nstates = 6
-    for i in range(1,7):
-        tmp = []
-        for k in range(0,64,2):
-            tmp.append((k,k+1))
-        check_not.append([i,tmp])
-    inits = list(csv.reader(open('data/inits_ok6.csv'), delimiter=","))
+    # this case will be managed by a dedicated program
 
 edges = list(csv.reader(open('data/all_possgates'+fname+'.csv'), delimiter=","))
 
