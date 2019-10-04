@@ -68,6 +68,14 @@ combinations = [
 ]
 # from http://utenti.quipo.it/base5/combinatoria/calcombinat.htm
 
+prob_machine = []
+for i in range(64):
+    tmp = []
+    for i in range(64):
+        tmp.append(0)
+    prob_machine.append(tmp)
+tstates = len(combinations)
+
 workbook = xlwt.Workbook(encoding='utf8')
 worksheet = workbook.add_sheet('State tables')
 
@@ -91,10 +99,28 @@ for combi in combinations:
         for edge in edges:
             tmp = tmp + states[edge][1][s-1:s]
         worksheet.write(r,2,tmp)
+        prob_machine[inistat.index(status)][inistat.index(tmp)] = prob_machine[inistat.index(status)][inistat.index(tmp)] + 1
         s=s+1
         r=r+1
     m=m+1
     r=r+2
 
+worksheet = workbook.add_sheet('Probab. Machine')
+
+worksheet.write(0,0,"Input State")
+worksheet.write(0,1,"Output State")
+worksheet.write(0,2,"Frequency")
+worksheet.write(0,3,"Cumulated Frequency")
+
+r = 2
+for i in range(64):
+    cumul = 0
+    for k in range(64):
+        worksheet.write(r,0,inistat[i])
+        worksheet.write(r,1,inistat[k])
+        worksheet.write(r,2,prob_machine[i][k]/tstates)
+        cumul = cumul + prob_machine[i][k]/tstates
+        worksheet.write(r,3,cumul)
+        r = r + 1
 
 workbook.save('data/state_table'+fname+'.xls')
