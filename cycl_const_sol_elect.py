@@ -53,6 +53,10 @@ noutput = nstates
 pixlen = 250000 / 1024 *0.37 # this is the number of elements in a pixel: if the picture height = width = 250000 nm, a pixel spans 250000/1024 nm
                             # as we suppose that there are 370 elements in 1000 nm we have the above formula
 pixnano = 250 / 1024 * 10**-6
+# test values
+#pixlen = 250 / 1024 *0.37
+#pixnano = 250 / 1024 * 10**-9
+
 print("number of elements in a pixel: %s" % pixlen)
 
 #########################
